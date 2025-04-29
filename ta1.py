@@ -151,7 +151,7 @@ def imprime_segmentacao(segmentacao):
     plt.axis('off')
     plt.show()
 
-def extrai_features_para_kmeans(imagens_filtradas, kernel_size=(3, 3)):
+def extrai_features_para_kmeans(imagens_filtradas, kernel_size=(2, 2)):
     kh, kw = kernel_size
     all_features = []
     formas = []
@@ -160,7 +160,7 @@ def extrai_features_para_kmeans(imagens_filtradas, kernel_size=(3, 3)):
 
         filtrados_por_kernel = dict()
         for escala_idx, kernel_idx, filtrada in resultados_img:
-            if escala_idx != 0:
+            if escala_idx != 1:
                 continue
             filtrados_por_kernel[kernel_idx] = filtrada
 
@@ -221,7 +221,7 @@ def main():
 
     base_thetas = [0, np.pi/4, np.pi/2, 3*np.pi/4]
     circular_thetas = [i * np.pi/8 for i in range(8)]
-    ksize = 11
+    ksize = 5
     sigma = 4
     lambd = 5
     gamma = 0.5
@@ -236,7 +236,7 @@ def main():
     imagens_filtradas = aplica_filtros(imagens, kernels)
     imprime_imagens_filtradas(imagens_filtradas, caminhos, titles)
     features, formas = extrai_features_para_kmeans(imagens_filtradas)
-    segmentacoes = segmenta_imagem(features, formas, n_clusters=5)
+    segmentacoes = segmenta_imagem(features, formas, n_clusters=3)
     imprime_segmentacoes(segmentacoes, caminhos)
 
 
