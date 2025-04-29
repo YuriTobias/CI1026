@@ -1,3 +1,11 @@
+# Trabalho 1 do curso de Visão Computacional (CI1026) desenvolvido pelos seguintes discentes:
+# - Izalorran O. Santos Bonaldi (GRR20210582)
+# - Nico I. G. Ramos (GRR20210574)
+# - Luan Carlo Rizardi (GRR20205648)
+# - Yuri Junqueira Tobias (GRR20211767)
+# Docente: Eduardo Todt
+# Data de entrega: 28/04/2025
+
 import os
 from matplotlib import pyplot as plt
 from matplotlib.image import imread
@@ -74,20 +82,24 @@ def aplica_filtros(imagens, kernels):
 
         escalas = [img]
 
+        # Reduzindo a imagem para 1/2 usando GaussianBlur e resize
         blur = cv2.GaussianBlur(img, (5, 5), 0)
         half = cv2.resize(blur, (img.shape[1] // 2, img.shape[0] // 2), interpolation=cv2.INTER_AREA)
         escalas.append(half)
 
+        # Reduzindo a imagem para 1/4 usando GaussianBlur e resize
         blur2 = cv2.GaussianBlur(half, (5, 5), 0)
         quarter = cv2.resize(blur2, (half.shape[1] // 2, half.shape[0] // 2), interpolation=cv2.INTER_AREA)
         escalas.append(quarter)
 
+        # Aplicando os filtros de Gabor e circular em cada escala
         for escala_idx, escala_img in enumerate(escalas):
             for kernel_idx, kernel in enumerate(kernels):
                 filtrada = cv2.filter2D(escala_img, -1, kernel)
                 img_resultados.append((escala_idx, kernel_idx, filtrada))
 
         resultados.append(img_resultados)
+
     return resultados
 
 def imprime_imagens_filtradas(imagens_filtradas, nomes_imagens, nomes_kernels, imagens_por_linha=5):
@@ -109,41 +121,6 @@ def imprime_imagens_filtradas(imagens_filtradas, nomes_imagens, nomes_kernels, i
         plt.tight_layout()
         plt.show()
 
-def extrai_features_janelas(gabor_images, window_size=4):
-    n, m = gabor_images[0].shape
-    n_windows = n // window_size
-    m_windows = m // window_size
-
-    features = np.zeros((n_windows, m_windows, 10), dtype=np.float32)
-
-    for i in range(n_windows):
-        for j in range(m_windows):
-            vetor = []
-            x_start = i * window_size
-            x_end = x_start + window_size
-            y_start = j * window_size
-            y_end = y_start + window_size
-
-            for img in gabor_images:
-                janela = img[x_start:x_end, y_start:y_end]
-                mean_abs = np.mean(np.abs(janela))
-                mean = np.mean(janela)
-                mean_dev = np.mean(np.abs(janela - mean))
-                vetor.extend([mean_abs, mean_dev])
-
-            features[i, j] = vetor
-    return features
-
-def segmenta_com_kmeans(features, n_clusters=3):
-    n, m, d = features.shape
-    X = features.reshape(-1, d)
-
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-    labels = kmeans.fit_predict(X)
-
-    labels_img = labels.reshape(n, m)
-    return labels_img
-
 def imprime_segmentacao(segmentacao):
     plt.figure(figsize=(8, 8))
     plt.imshow(segmentacao, cmap='nipy_spectral')
@@ -151,27 +128,29 @@ def imprime_segmentacao(segmentacao):
     plt.axis('off')
     plt.show()
 
-def extrai_features_para_kmeans(imagens_filtradas, kernel_size=(2, 2)):
-    kh, kw = kernel_size
+def extrai_features_para_kmeans(imagens_filtradas, patch_size=(2, 2)):
+    kh, kw = patch_size    # Tamanho da janela para extração de features
     all_features = []
     formas = []
 
+    # Itera sobre cada imagem filtrada
     for resultados_img in imagens_filtradas:
-
         filtrados_por_kernel = dict()
         for escala_idx, kernel_idx, filtrada in resultados_img:
+            # Filtra apenas a imagem original (escala 1)
             if escala_idx != 1:
                 continue
             filtrados_por_kernel[kernel_idx] = filtrada
-
+        
         h, w = next(iter(filtrados_por_kernel.values())).shape
 
+        # Inicializa a lista de features para a imagem
         features_img = []
-
+        # Itera sobre cada patch da imagem sem sobreposição
         for i in range(0, h - kh + 1, kh):
             for j in range(0, w - kw + 1, kw):
                 features_patch = []
-
+                # Para cada patch, calcula a média e desvio padrão para cada kernel
                 for kernel_idx in sorted(filtrados_por_kernel.keys()):
                     patch = filtrados_por_kernel[kernel_idx][i:i+kh, j:j+kw]
                     features_patch.append(np.mean(patch))
@@ -184,6 +163,7 @@ def extrai_features_para_kmeans(imagens_filtradas, kernel_size=(2, 2)):
         formas.append((n_patches_vertical, n_patches_horizontal))
         all_features.append(np.array(features_img))
 
+    # Concatena todas as features de todas as imagens
     return all_features, formas
 
 def segmenta_imagem(features, formas, n_clusters=4):
@@ -195,6 +175,7 @@ def segmenta_imagem(features, formas, n_clusters=4):
         segmentacoes.append(segmentacao)
     return segmentacoes
 
+# Função para imprimir as segmentações de todas as imagens do diretório
 def imprime_segmentacoes(segmentacoes, caminhos, imagens_por_linha=5):
     total = len(segmentacoes)
     linhas = (total + imagens_por_linha - 1) // imagens_por_linha
@@ -214,11 +195,12 @@ def imprime_segmentacoes(segmentacoes, caminhos, imagens_por_linha=5):
     plt.show()
 
 def main():
+    # Carregando e imprimindo imagens
     diretorio = 'imagens'
     imagens, caminhos = carrega_imagens(diretorio)
-
     imprime_imagens(imagens, caminhos)
 
+    # Definindo os parâmetros dos filtros
     base_thetas = [0, np.pi/4, np.pi/2, 3*np.pi/4]
     circular_thetas = [i * np.pi/8 for i in range(8)]
     ksize = 5
@@ -228,14 +210,21 @@ def main():
     psi = 0
     ktype = cv2.CV_32F
 
+    # Gerando e imprimindo os filtros de Gabor e circular
     gabor_kernels = gera_filtros_de_gabor(base_thetas, ksize, sigma, lambd, gamma, psi, ktype)
     circular_kernel = gera_filtro_circular(circular_thetas, ksize, sigma, lambd, gamma, psi, ktype)
     kernels = gabor_kernels + [circular_kernel]
     titles = ['0°', '45°', '90°', '135°', 'Circular']
     imprime_filtros_de_gabor(kernels, titles)
+
+    # Aplicando os filtros nas imagens e imprimindo os resultados
     imagens_filtradas = aplica_filtros(imagens, kernels)
     imprime_imagens_filtradas(imagens_filtradas, caminhos, titles)
+
+    # Extraindo features para KMeans
     features, formas = extrai_features_para_kmeans(imagens_filtradas)
+
+    # Segmentando as imagens usando KMeans e imprimindo os resultados
     segmentacoes = segmenta_imagem(features, formas, n_clusters=3)
     imprime_segmentacoes(segmentacoes, caminhos)
 
