@@ -156,7 +156,7 @@ def load_data(subset_size_train=5000, subset_size_test=1000, random_state=42):
 
     # Visualizar algumas imagens de exemplo
     plt.figure(figsize=(10,4))
-    plt.title("Visualizando algumas imagens do dataset MNIST:")
+    plt.title('Visualizando algumas imagens do dataset MNIST:\n')
     for i in range(10):
         plt.subplot(2, 5, i+1)
         plt.imshow(X_train[i], cmap='gray')
